@@ -50,7 +50,7 @@ The below metrics are calculated based on the 25% testing data.
 - Of the Non Viral posts, 94% were correctly identified. However, this is not as impressive due to the class imbalance
 - Of the Viral posts in the test data, the model managed to guess 36% of them correctly based on the caption and the day of the week. This might be considered as "good" depending on the context and user. Correctly identifying a third of your posts as "viral-worthy" might be considered useful 
 
-![ROC Curve](https://github.com/DylanZammit/FacebookViralityPredictor/blob/master/image/ROC.png?raw=true)
+![ROC Curve](https://github.com/DylanZammit/Facebook-Virality-Predictor/blob/master/img/ROC.png?raw=true)
 
 ## Improvements
 Some points I can think of which would improve the model:
