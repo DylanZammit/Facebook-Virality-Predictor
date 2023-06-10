@@ -1,8 +1,8 @@
 # Facebook Virality Prediction
 
-This is a **failed** attempt to try and predict virality of Facebook posts by a randomly chosen Maltese newspaper agency. The initial idea was to use the caption of a post to predict the engagement of a post, defined as
+This project is an attempt to predict "virality" of Facebook posts by an arbitrarily chosen Maltese news agency. The initial idea was to use the caption of a post to predict the engagement of a post, defined as
 
-> engagement = reactions+shares+comments.
+> engagement = reactions + shares + comments.
 
 However, the problem was simplified to a Binary Classification model "Viral" and "Not Viral", which is simply a chosen threshold (in our case T=80), such that a post is viral iff `engagement > T`.
 

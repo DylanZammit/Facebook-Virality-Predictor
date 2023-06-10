@@ -43,6 +43,8 @@ BASE_DIR = os.path.dirname(__file__)
 url_regex = r"(http:\/\/www.|https:\/\/www.|http:\/\/|https:\/\/)?[a-zA-Z0-9]+([-.]{1}[a-zA-Z0-9]+)*\.[a-z][a-zA-Z]{1,7}(:[0-9]{1,5})?(\/[^ \n\r\)]+)?"
 
 days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+months_of_year = 'january february march april may june july august september october november december'.split()
+
 
 def clean(orig):
     if not orig: return ''
@@ -56,6 +58,9 @@ def clean(orig):
     breakers = [r'\n', r'\t']
     for p in breakers:
         x = x.replace(p, ' ')
+
+    for dow in months_of_year:
+        x = x.replace(dow, 'MONTH_OF_YEAR')
 
     for dow in days_of_week:
         x = x.replace(dow, 'DAY_OF_WEEK')
@@ -90,7 +95,7 @@ def save_ml(obj, fn='ml_model.pkl'):
         print(f'saved!')
 
 
-def load_ml(fn='ml_model.pkl'):
+def load_ml(fn='FB_model.pkl'):
     base_dir = os.path.dirname(__file__)
     fn = os.path.join(base_dir, fn)
     with open(fn, 'rb') as f:
@@ -119,16 +124,16 @@ class StemmedCountVectorizer(TfidfVectorizer):
         return lambda doc: ([stemmer.stem(w) for w in analyzer(doc)])
 
 
-def get_data(viral_threshold=20):
+def get_data(viral_threshold=15):
     sheet_id = r'1mGNZX6qb7hMnKa9va_cyTjJm-B9RGV225U_JzEZryHw'
-    sheet_name = 'Sheet1'
+    sheet_name = 'hist'
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     data = pd.read_csv(url)
     data['engagement'] = np.where(data.tot_engagement < viral_threshold, 0, 1)
     return data
 
 
-class MLOTP:
+class ViralityPredictor:
     
     def __init__(
             self,
@@ -151,14 +156,11 @@ class MLOTP:
             max_df=0.8,
             stop_words=stop_words,
             analyzer='word',
-            ngram_range=(1, 2),
+            ngram_range=(1, 3),
             # tokenizer=LemmaTokenizer(),
             # preprocessor=clean,
         )
-        self.stop_words = stop_words
         self.oversample = oversample
-
-        self.clf_name = classifier
 
         classifier_map = {
             'MNB': MultinomialNB,
@@ -182,9 +184,10 @@ class MLOTP:
             'total_fit_time': 0,
         }
 
-        data = get_data()
+        data = get_data(viral_threshold=viral_threshold)
         # data.tot_engagement.quantile(0.8) ~35 engagement
 
+        # split should be outside of class!!
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             data.drop(['engagement'], axis=1),
             data.engagement,
@@ -193,12 +196,11 @@ class MLOTP:
         )
         self.X_test_orig = self.X_test.copy()
 
-        self.test_setup()
-
-    def test_setup(self):
-        self.X_test['message_orig'] = self.X_test.Message
-        self.X_test.Message = self.X_test.Message.apply(clean)
-        self.X_test = self.parse(self.X_test)
+    def preprocess(self, data):
+        data['message_orig'] = data.Message
+        data.Message = data.Message.apply(clean)
+        data = self.parse(data)
+        return data
 
     def parse(self, data):
         data['day_of_week'] = data['Created time'].apply(lambda x: pd.Timestamp(x)).dt.dayofweek
@@ -219,14 +221,10 @@ class MLOTP:
         try:
             # for testing
             x = self.count_vect.transform(x).toarray()
-        except: # escape specific error...
+        except:  # escape specific error...
             # for training
             x = self.count_vect.fit_transform(x).toarray()
 
-        if 0:
-            for w in self.count_vect.get_feature_names_out():
-                print(w)
-            breakpoint()
         # also include extra features such as post length and create hour of post
         x = np.concatenate((
                 x,
@@ -238,9 +236,11 @@ class MLOTP:
 
     def train(self):
         tick = time.time()
-        self.X_train.Message = self.X_train.Message.apply(clean)
 
-        self.X_train = self.parse(self.X_train)
+        # self.X_train.Message = self.X_train.Message.apply(clean)
+        #
+        # self.X_train = self.parse(self.X_train)
+        self.X_train = self.preprocess(self.X_train)
 
         # over/under sample
         if self.oversample:
@@ -254,6 +254,7 @@ class MLOTP:
         tock = time.time()
 
         n_train = len(self.X_train)
+        self.X_test = self.preprocess(self.X_test)
         y_pred = self.clf.predict(self.X_test)
 
         accuracy = round(accuracy_score(self.y_test, y_pred), 4)
@@ -307,12 +308,10 @@ class MLOTP:
         words_idx = self.clf.coef_[0].argsort()
 
         features = self.count_vect.get_feature_names_out()
-        # n_features = len(features)
 
-        influential_words = np.take(features, words_idx[-n:])
+        influential_words = np.take(features, words_idx[-n:])[::-1]
         boring_words = np.take(features, words_idx[:n])
-
-        return boring_words, influential_words
+        return pd.DataFrame(data=np.array([influential_words, boring_words]).T, columns=['influential', 'boring'])
 
     def plot(self):
         y_score = self.clf.decision_function(self.X_test)
@@ -369,37 +368,35 @@ if __name__ == '__main__':
     save = args.save
     stem = args.stem
     T = args.threshold
+    viral_threshold = args.viral_threshold
 
     classifier = args.classifier
     kwargs = {
         'loss': 'log_loss',
         'penalty': 'l1',
+        'fit_intercept': False,
     }
 
     if load:
         ml = load_ml()
         print('setting up test data...', flush=True)
-        ml.test_setup()
     else:
         print('Creating new model...')
-        ml = MLOTP(
+        ml = ViralityPredictor(
             classifier=classifier,
             oversample=oversample,
             stem=stem,
             **kwargs
         )
         ml.train()
+
         if save:
             fn = 'FB_model.pkl'
             save_ml(ml, fn)
     print('predicting test data...', flush=True)
     df_test = ml.predict_test(T)
     try:
-        neg, pos = ml.top_words()
-        print('Non-Influential features')
-        print(neg)
-        print('Influential features')
-        print(pos)
+        print(ml.top_words(20))
     except AttributeError:
         pass
 
@@ -410,17 +407,19 @@ if __name__ == '__main__':
 
     A = df_test[df_test.engagement == 1].pred.mean()
     B = df_test[df_test.engagement == 0].pred.mean()
-
-    # print(ml)
     print(f'Sample size = {ml.n_train}')
+    print('Num Viral posts (test set) = {num_viral}/{num_posts}'.format(
+        num_viral=sum(ml.y_test),
+        num_posts=len(ml.y_test))
+    )
     print('Of Viral posts, ML agreed with {:.1f}%'.format(A*100))
     print('Of NON-Viral posts, ML agreed with {:.1f}%'.format(100-int(B*100)))
     print('Out-of-sample accuracy = {:.1f}%'.format(ml.accuracy*100))
-
+    print(ml)
     df_test.to_csv('predictions.csv')
 
     exit()
-    from datetime import datetime
+
     captions = ['This is some sample caption. A prediction of virality for this caption example will be given.']
-    df_single = ml.predict(captions, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    df_single = ml.predict(captions)
     print(df_single)
