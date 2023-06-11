@@ -44,7 +44,6 @@ The below metrics are calculated based on the 30% testing data.
 | Recall | 45.45% |
 | F1 Score | 42.55% |
 
-## Analysis
 - The accuracy is at a low value of almost 63%.
 - The precision, recall and F1 scores are all at around a value of 42%. This is typically not a good sign, and suggests that the model needs serious improvement. This is challenging to do due to the limited test size provided. Below we can also see the ROC curve, and precision-recall curve. 
 - Having said that, the values were compared to a DummyClassifier as a baseline model. Compared to this, the Logistic Regression model displays a significant improvement over this baseline model, indicating that there is some form of predictive power when it comes to the caption.
@@ -53,9 +52,19 @@ The below metrics are calculated based on the 30% testing data.
 
 ![ROC Curve](https://github.com/DylanZammit/Facebook-Virality-Predictor/blob/master/img/ROC.png?raw=true)
 
+## Analysis
+As described above, the model can by no means be considered as "good", and various improvements can be applied. However, some interesting facts arise when looking at the features with the highest model coefficients. The model interprets posts with these keywords as more likely to get good engagement. Below we mention some of the most significant words and their corresponding posts 
+### Hotel 
+The most influential word was surprisingly non-political. However, taking a closer look at the Facebook posts containing this word, we can understand why such posts generate engagement. The majority of articles relate to the granting and withdrawal of licences for the construction of hotels locally. Unsurprisingly, this leads to a mixture of anger and delight from the public since this topic is quite contentious in the island due to our limited space. You can find the top post by engagement mentioning a hotel [here](https://www.facebook.com/597379732408318/posts/563235669156058).
+### Bernice
+A story that shook the country around the end of 2022 involves the murder of Bernice Cassar. Of the 14 posts containing her name, only 3 did not garner more engagement than 23. Unsurprisingly, the name of her husband, accused of the murder, also generated a high level of engagement. The top post by engagement can be found [here](https://www.facebook.com/597379732408318/posts/590912169721741).
+### Politics
+Other top-20 influential words include "Marie", "Repubblika President", "Party PN" and "Mark Camilleri". All of which are either political figures or entities. This is not surprising given how "passionate" or at least "opinionated" the Maltese population is when it comes to politics. One of the most engaged articles can be found [here](https://www.facebook.com/597379732408318/videos/573250945002185).
+
+On the other hand, posts containing words such as "insurance" and "cannabis" tend to not perform as well as other topics.
 ## Improvements
 Some points I can think of which would improve the model:
 - Larger sample size
 - Better data cleaning
 - Testing out other ML models including random forests
-- Include other features such as sentiment, topic (ex. politics, technology, entertainment, environment etc), translation in case of non-English caption. Most of these would require including other ML algos in the pipeline
+- Include other features such as sentiment, topic (ex. politics, technology, entertainment, environment etc.), translation in case of non-English caption. Most of these would require including other ML algos in the pipeline
