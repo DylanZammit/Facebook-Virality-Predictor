@@ -82,12 +82,12 @@ def clean(orig):
     return x
 
 
-def save_ml(obj, fn='ml_model.pkl'):
+def save_ml(obj, model_name_pkl='FB_model.pkl'):
     base_dir = os.path.dirname(__file__)
-    fn = os.path.join(base_dir, fn)
+    model_name_pkl = os.path.join(base_dir, 'results', model_name_pkl)
     try:
-        with open(fn, 'wb+') as f:
-            print(f'saving to {fn}...', end='', flush=True)
+        with open(model_name_pkl, 'wb+') as f:
+            print(f'saving to {model_name_pkl}...', end='', flush=True)
             pickle.dump(obj, f)
     except Exception as e:
         print(f'FAILED TO SAVE: {e}')
@@ -95,13 +95,13 @@ def save_ml(obj, fn='ml_model.pkl'):
         print(f'saved!')
 
 
-def load_ml(fn='FB_model.pkl'):
+def load_ml(model_name_pkl='FB_model.pkl'):
     base_dir = os.path.dirname(__file__)
-    fn = os.path.join(base_dir, fn)
-    with open(fn, 'rb') as f:
-        print(f'loading {fn}...', end='', flush=True)
+    model_name_pkl = os.path.join(base_dir, 'results', model_name_pkl)
+    with open(model_name_pkl, 'rb') as f:
+        print(f'loading {model_name_pkl}...', end='', flush=True)
         model = pickle.load(f)
-    print(f'loaded {fn}')
+    print(f'loaded {model_name_pkl}')
     return model
 
 
