@@ -64,7 +64,7 @@ Other top-20 influential words include "Marie", "Repubblika President", "Party P
 
 On the other hand, posts containing words such as "insurance" and "cannabis" tend to not perform as well as other topics.
 
-![analysis](https://github.com/DylanZammit/Facebook-Virality-Predictor/blob/master/img/Influential_Words.pdf?raw=true)
+![analysis](https://github.com/DylanZammit/Facebook-Virality-Predictor/blob/master/img/analysis.png?raw=true)
 
 ## Improvements
 Some points I can think of which would improve the model:
