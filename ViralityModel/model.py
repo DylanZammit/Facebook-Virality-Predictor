@@ -316,13 +316,11 @@ class ViralityPredictor:
 
         # handle case if extra features are included!!
         # They should always be the last features, but double check
-        words_idx = self.clf.coef_[0].argsort()
-
         features = self.count_vect.get_feature_names_out()
-
-        influential_words = np.take(features, words_idx[-n:])[::-1]
-        boring_words = np.take(features, words_idx[:n])
-        return pd.DataFrame(data=np.array([influential_words, boring_words]).T, columns=['influential', 'boring'])
+        df = pd.DataFrame(data=np.array([features, self.clf.coef_[0]]).T, columns=['words', 'score']).set_index('words')
+        df = df.sort_values('score')
+        # breakpoint()
+        return df
 
     def plot(self):
         y_score = self.clf.decision_function(self.X_test)
@@ -406,7 +404,12 @@ if __name__ == '__main__':
     print('predicting test data...', flush=True)
     df_test = ml.predict_test(T)
     try:
-        print(ml.top_words(20))
+        df = ml.top_words(20)
+        Z = pd.concat([df.iloc[:20], df.iloc[-20:]])
+        Z.plot.bar()
+        plt.xticks(rotation=45)
+        plt.show()
+        Z.to_csv('top_bottom_words.csv')
     except AttributeError as e:
         print('cannot print top words')
         print(e)

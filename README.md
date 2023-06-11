@@ -28,6 +28,7 @@ The below steps were followed:
 -  **Oversample** due to class imbalance
 - **Extra features** such day of the week (Monday, Tuesday etc) and the length of the post in number of words
 - Fit **Logistic Regression** model
+
 ## Results
 At the time being, only a linear model (Logistic Regression) using stochastic gradient descent was used as classifier. Considering the high-dimensional problem at hand, a linear classifier is the most prudent model to start with to avoid overfitting. Further investigation is required to confirm this. Other linear models with different loss functions were used with little to no success. 
 
@@ -62,6 +63,9 @@ A story that shook the country around the end of 2022 involves the murder of Ber
 Other top-20 influential words include "Marie", "Repubblika President", "Party PN" and "Mark Camilleri". All of which are either political figures or entities. This is not surprising given how "passionate" or at least "opinionated" the Maltese population is when it comes to politics. One of the most engaged articles can be found [here](https://www.facebook.com/597379732408318/videos/573250945002185).
 
 On the other hand, posts containing words such as "insurance" and "cannabis" tend to not perform as well as other topics.
+
+![analysis](https://github.com/DylanZammit/Facebook-Virality-Predictor/blob/master/img/Influential_Words.pdf?raw=true)
+
 ## Improvements
 Some points I can think of which would improve the model:
 - Larger sample size
