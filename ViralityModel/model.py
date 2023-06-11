@@ -12,6 +12,7 @@ import nltk
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer, LancasterStemmer
 from nltk.corpus import stopwords
+from nltk import pos_tag
 
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.linear_model import PassiveAggressiveClassifier, Perceptron, SGDClassifier
@@ -33,10 +34,12 @@ DummyClassifier = partial(DummyClassifier, strategy='stratified')
 
 pd.set_option('display.max_rows', None)
 
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+# uncomment these lines if running for the first time
+# nltk.download('stopwords')
+# nltk.download('punkt')
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
+# nltk.download('averaged_perceptron_tagger')
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -152,8 +155,9 @@ class ViralityPredictor:
         vectorizer = StemmedCountVectorizer if stem else TfidfVectorizer
 
         self.count_vect = vectorizer(
-            min_df=2,
-            max_df=0.8,
+            # max_features=10000,
+            min_df=5,
+            max_df=0.7,
             stop_words=stop_words,
             analyzer='word',
             ngram_range=(1, 3),
@@ -168,7 +172,7 @@ class ViralityPredictor:
             'SGD': SGDClassifier,
             'PPT': Perceptron,
             'PA':  PassiveAggressiveClassifier,
-            'DU': DummyClassifier,
+            'DU':  DummyClassifier,
         }
 
         try:
@@ -179,7 +183,7 @@ class ViralityPredictor:
         self.stats = {
             'n_train': 0,
             'n_train_hist': [],
-            'accuracy': 0,
+            'accuracy': 0.0,
             'accuracy_hist': [],
             'total_fit_time': 0,
         }
@@ -191,12 +195,24 @@ class ViralityPredictor:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             data.drop(['engagement'], axis=1),
             data.engagement,
-            test_size=0.3,
+            test_size=0.2,
             random_state=42
         )
         self.X_test_orig = self.X_test.copy()
 
     def preprocess(self, data):
+
+        # Tokenize and POS tag the documents
+        tokenized_documents = [nltk.word_tokenize(doc) for doc in data.Message]
+        pos_tagged_documents = [pos_tag(tokens) for tokens in tokenized_documents]
+
+        # Filter out only nouns
+        noun_documents = [
+            " ".join([token for token, pos in pos_tags if pos.startswith("N")])
+            for pos_tags in pos_tagged_documents
+        ]
+        data.Message = noun_documents
+
         data['message_orig'] = data.Message
         data.Message = data.Message.apply(clean)
         data = self.parse(data)
@@ -237,9 +253,6 @@ class ViralityPredictor:
     def train(self):
         tick = time.time()
 
-        # self.X_train.Message = self.X_train.Message.apply(clean)
-        #
-        # self.X_train = self.parse(self.X_train)
         self.X_train = self.preprocess(self.X_train)
 
         # over/under sample
@@ -250,7 +263,6 @@ class ViralityPredictor:
 
         print('fit model...')
         self.clf.fit(self.X_train, self.y_train)
-        # self.clf.partial_fit(x, y, classes=[0, 1]) # if run in batches use this
         tock = time.time()
 
         n_train = len(self.X_train)
@@ -269,7 +281,6 @@ class ViralityPredictor:
         self.stats['precision'] = precision
         self.stats['recall'] = recall
         self.stats['total_fit_time'] += tock-tick
-        print(self)
         return self
 
     def predict(self, caption, created_time, df=None, threshold=None):
@@ -319,6 +330,7 @@ class ViralityPredictor:
         fpr, tpr, _ = roc_curve(self.y_test, y_score, pos_label=self.clf.classes_[1])
         roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr)
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+        plt.grid()
 
         precision, recall, _ = precision_recall_curve(self.y_test, y_score, pos_label=self.clf.classes_[1])
         pr_display = PrecisionRecallDisplay(precision=precision, recall=recall)
@@ -351,8 +363,6 @@ class ViralityPredictor:
 
 
 if __name__ == '__main__':
-
-    print('Welcome to Facebook Post react predictor!')
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--load", help="load model", action='store_true')
@@ -397,13 +407,15 @@ if __name__ == '__main__':
     df_test = ml.predict_test(T)
     try:
         print(ml.top_words(20))
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print('cannot print top words')
+        print(e)
 
     try:
         ml.plot()
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print('cannot plot ROC curve')
+        print(e)
 
     A = df_test[df_test.engagement == 1].pred.mean()
     B = df_test[df_test.engagement == 0].pred.mean()

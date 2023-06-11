@@ -4,10 +4,10 @@ This project is an attempt to predict "virality" of Facebook posts by an arbitra
 
 > engagement = reactions + shares + comments.
 
-However, the problem was simplified to a Binary Classification model "Viral" and "Not Viral", which is simply a chosen threshold (in our case T=80), such that a post is viral iff `engagement > T`.
+However, the problem was simplified to a Binary Classification model "Viral" and "Not Viral", which is simply a chosen threshold (in our case T=23), such that a post is viral iff `engagement > T`. 70% of TheMaltaIndependent posts have less engagement than 23. 
 
-The reason for failure could be one of two:
-- *Not enough data*. We are using only `n=987` data points, and the number of features `m` is `m>>n`. This is because we are using NLP, and each unique word is a dimension/feature.
+The model is far from perfect, with quite low precision/recall/F1-scores. However, some interesting insights are still observed. Two reasons why the model does not perform well are
+- *Not enough data*. We are using only `n=2897` data points, and the number of features `m` is `m>>n`. This is because we are using NLP, and each unique word is essentially a dimension/feature.
 - *Caption is not a strong predictor*: Perhaps other features like the sentiment of the post, the time of day it is posted etc are stronger predictors, which are not being taken into consideration. 
 I believe that the first one is more likely, as `n=987` is a far too small sample size, but it is challenging to gather much more data. 
 ## Data Sample
